@@ -3,11 +3,8 @@
 #include "esp_log.h"
 #include "esp_check.h"
 #include "ADXL343.h"
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
 #include "driver/spi_master.h"
 #include "rom/ets_sys.h"
-#include "driver/gpio.h"
 
 /*SPI COMMAND FIELD*/
 #define CMD_WRITE_MODE  0x00 // Write to device
@@ -173,6 +170,20 @@ esp_err_t Remove_Offset_Calibrate ( const ADXL343_Handle_t handle ) {
 	return ESP_OK;
 }
 
+/*Write To Register*/
+esp_err_t Write_To_Register( const ADXL343_Handle_t handle, uint8_t addr, uint8_t data ) {
+	spi_transaction_t trans = {
+		.flags = SPI_TRANS_USE_TXDATA,
+		.cmd = CMD_WRITE_MODE | CMD_SINGLE_READ,
+		.addr = addr,
+		.rx_buffer = NULL,
+		.tx_data[0] = data,
+		.length = 8,
+	};
+
+	return spi_device_transmit( handle->devHandle, &trans );
+}
+
 
 /*Public Function*/
 /*==================== Setting UP and Reading Accelerometer Values ====================*/
@@ -246,16 +257,7 @@ esp_err_t ADXL343_Start_Measuring ( const ADXL343_Handle_t handle ) {
 	/*Setting measure bit and writing to reg*/
 	currentRegVal |= 0x08;
 
-	memset( &trans, 0, sizeof( spi_transaction_t ) );
-
-	trans.flags = SPI_TRANS_USE_TXDATA;
-	trans.cmd = CMD_WRITE_MODE | CMD_SINGLE_READ;
-	trans.addr = POWER_CTL_R;
-	trans.length = 8;
-	trans.tx_data[0] = currentRegVal;
-	trans.rx_buffer = NULL;
-
-	err = spi_device_transmit( handle->devHandle, &trans );
+	err = Write_To_Register( handle, POWER_CTL_R, currentRegVal );
 	if ( err != ESP_OK ) return err;
 
 	return ESP_OK;
@@ -282,16 +284,7 @@ esp_err_t ADXL343_Stop_Measuring ( const ADXL343_Handle_t handle ) {
 	/*Un Setting Measure Bit*/
 	currentRegVal &= ( ~0x08 );
 
-	memset( &trans, 0, sizeof( spi_transaction_t ) );
-
-	trans.flags = SPI_TRANS_USE_TXDATA;
-	trans.cmd = CMD_WRITE_MODE | CMD_SINGLE_READ;
-	trans.addr = POWER_CTL_R;
-	trans.length = 8;
-	trans.tx_data[0] = currentRegVal;
-	trans.rx_buffer = NULL;
-
-	err = spi_device_transmit( handle->devHandle, &trans );
+	err = Write_To_Register( handle, POWER_CTL_R, currentRegVal );
 	if ( err != ESP_OK ) return err;
 
 	return ESP_OK;
@@ -303,16 +296,7 @@ esp_err_t ADXL343_Set_G_Range ( const ADXL343_Handle_t handle, uint8_t g ) {
 	uint8_t dataToSend = g > ADXL343_16G ? ADXL343_16G : g;
 	dataToSend |= 0x08; // Full ress mode
 
-	spi_transaction_t trans = {
-		.flags = SPI_TRANS_USE_TXDATA,
-		.cmd = CMD_WRITE_MODE | CMD_SINGLE_READ,
-		.addr = DATA_FORMAT_R,
-		.tx_data[0] = dataToSend,
-		.length = 8,
-		.rx_buffer = NULL
-	};
-
-	err = spi_device_transmit( handle->devHandle, &trans );
+	err = Write_To_Register( handle, DATA_FORMAT_R, dataToSend );
 	if ( err != ESP_OK ) return err;
 
 	return ESP_OK;
@@ -322,17 +306,7 @@ esp_err_t ADXL343_Set_G_Range ( const ADXL343_Handle_t handle, uint8_t g ) {
 esp_err_t ADXL343_Set_Output_Rate(  const ADXL343_Handle_t handle, uint8_t rate ) {
 	esp_err_t err = ESP_OK;
 
-	/*Writing to BW_RATE register*/
-	spi_transaction_t trans = {
-		.flags = SPI_TRANS_USE_TXDATA,
-		.cmd = CMD_WRITE_MODE | CMD_SINGLE_READ,
-		.addr = BW_RATE_R,
-		.rx_buffer = NULL,
-		.tx_data[0] = rate,
-		.length = 8,
-	};
-
-	err = spi_device_transmit( handle->devHandle, &trans );
+	err = Write_To_Register( handle, BW_RATE_R, rate );
 	if ( err != ESP_OK ) return err;
 
 	handle->config.outputRate = rate;
@@ -418,17 +392,7 @@ esp_err_t ADXL343_Set_Tap_Threshold ( const ADXL343_Handle_t handle, float gThre
 
 	uint8_t gLSB = gThreshold / TAP_THRESHOLD_SCALE_FACTOR;
 
-	/*Writing to THRESH_TAP register*/
-	spi_transaction_t trans = {
-		.flags = SPI_TRANS_USE_TXDATA,
-		.cmd = CMD_WRITE_MODE | CMD_SINGLE_READ,
-		.addr = THRESH_TAP_R,
-		.rx_buffer = NULL,
-		.tx_data[0] = gLSB,
-		.length = 8,
-	};
-
-	err = spi_device_transmit( handle->devHandle, &trans );
+	err = Write_To_Register( handle, THRESH_TAP_R, gLSB );
 	if ( err != ESP_OK ) return err;
 
 	return ESP_OK;
@@ -441,18 +405,7 @@ esp_err_t ADXL343_Set_Tap_Duration_Limit ( const ADXL343_Handle_t handle, uint32
 
 	uint8_t bitsInRegister = timeUS / TAP_DUR_SCALE_FACTOR;
 
-	printf("%d\n", bitsInRegister);
-	/*Writing to register*/
-	spi_transaction_t trans = {
-		.flags = SPI_TRANS_USE_TXDATA,
-		.cmd = CMD_WRITE_MODE | CMD_SINGLE_READ,
-		.addr = TAP_DUR_R,
-		.rx_buffer = NULL,
-		.tx_data[0] = bitsInRegister,
-		.length = 8,
-	};
-
-	err = spi_device_transmit( handle->devHandle, &trans );
+	err = Write_To_Register( handle, TAP_DUR_R, bitsInRegister );
 	if ( err != ESP_OK ) return err;
 
 	return ESP_OK;
@@ -465,17 +418,7 @@ esp_err_t ADXL343_Set_Tap_Latency ( const ADXL343_Handle_t handle, float timeMS 
 
 	uint8_t bitsInRegister = timeMS / TAP_LATENCY_SCALE_FACTOR;
 
-	/*Writing to register*/
-	spi_transaction_t trans = {
-		.flags = SPI_TRANS_USE_TXDATA,
-		.cmd = CMD_WRITE_MODE | CMD_SINGLE_READ,
-		.addr = TAP_LAT_R,
-		.rx_buffer = NULL,
-		.tx_data[0] = bitsInRegister,
-		.length = 8,
-	};
-
-	err = spi_device_transmit( handle->devHandle, &trans );
+	err = Write_To_Register( handle, TAP_LAT_R, bitsInRegister );
 	if ( err != ESP_OK ) return err;
 
 	return ESP_OK;
@@ -488,17 +431,7 @@ esp_err_t ADXL343_Set_Second_Tap_Window ( const ADXL343_Handle_t handle, float t
 
 	uint8_t bitsInRegister = timeMS / SECOND_TAP_WINDOW_SCALE_FACTOR;
 
-	/*Writing to register*/
-	spi_transaction_t trans = {
-		.flags = SPI_TRANS_USE_TXDATA,
-		.cmd = CMD_WRITE_MODE | CMD_SINGLE_READ,
-		.addr = TAP_WIN_R,
-		.rx_buffer = NULL,
-		.tx_data[0] = bitsInRegister,
-		.length = 8,
-	};
-
-	err = spi_device_transmit( handle->devHandle, &trans );
+	err = Write_To_Register( handle, TAP_WIN_R, bitsInRegister );
 	if ( err != ESP_OK ) return err;
 
 	return ESP_OK;
@@ -510,33 +443,16 @@ esp_err_t ADXL343_Set_Second_Tap_Window ( const ADXL343_Handle_t handle, float t
 esp_err_t ADXL343_Enable_Interrupts( const ADXL343_Handle_t handle, uint8_t interrupt ) {
 	esp_err_t err = ESP_OK;
 
-	spi_transaction_t trans = {
-		.flags = SPI_TRANS_USE_TXDATA,
-		.cmd = CMD_WRITE_MODE | CMD_SINGLE_READ,
-		.addr = INT_ENABLE_R,
-		.rx_buffer = NULL,
-		.tx_data[0] = interrupt,
-		.length = 8,
-	};
-
-	err = spi_device_transmit( handle->devHandle, &trans );
+	err = Write_To_Register( handle, INT_ENABLE_R, interrupt );
 	if ( err != ESP_OK ) return err;
+
 	return ESP_OK;
 }
 
 esp_err_t ADXL343_Set_Interrupt_Map( const ADXL343_Handle_t handle, uint8_t interruptMap ) {
 	esp_err_t err = ESP_OK;
 
-	spi_transaction_t trans = {
-		.flags = SPI_TRANS_USE_TXDATA,
-		.cmd = CMD_WRITE_MODE | CMD_SINGLE_READ,
-		.addr = INT_MAP_R,
-		.rx_buffer = NULL,
-		.tx_data[0] = interruptMap,
-		.length = 8,
-	};
-
-	err = spi_device_transmit( handle->devHandle, &trans );
+	err = Write_To_Register( handle, INT_MAP_R, interruptMap);
 	if ( err != ESP_OK ) return err;
 
 	return ESP_OK;
@@ -565,16 +481,7 @@ esp_err_t ADXL343_Read_Interrupt_Source( const ADXL343_Handle_t handle, uint8_t*
 esp_err_t ADXL343_Enable_Tap_Axes ( const ADXL343_Handle_t handle, uint8_t axes ) {
 	esp_err_t err = ESP_OK;
 
-	spi_transaction_t trans = {
-		.flags = SPI_TRANS_USE_TXDATA,
-		.cmd = CMD_WRITE_MODE | CMD_SINGLE_READ,
-		.addr = TAP_AXES_R,
-		.rx_buffer = NULL,
-		.tx_data[0] = axes,
-		.length = 8,
-	};
-
-	err = spi_device_transmit( handle->devHandle, &trans );
+	err = Write_To_Register( handle, TAP_AXES_R, axes );
 	if ( err != ESP_OK ) return err;
 
 	return ESP_OK;
