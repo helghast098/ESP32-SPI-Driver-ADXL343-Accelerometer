@@ -1,4 +1,6 @@
 #include <math.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include "esp_log.h"
 #include "esp_check.h"
 #include "ADXL343.h"
