@@ -11,6 +11,8 @@
 │       └── ADXL343.c # Function definitions for Accelerometer
 └── 
 ```
+**Note:**<br>
+The driver communicates with the ADXL343 with 4-wire SPI.
 
 **How to Use:**<br>
-Copy the directory LCD_DFR0554 into the components directory of the ESP-32 project
+Copy the directory ADXL343 into the components directory of the ESP-32 project.
