@@ -13,7 +13,7 @@
 ```
 **Note:**<br>
 The driver communicates with the ADXL343 with 4-wire SPI. Not all functionality of the ADXL343 is implemented: the measure and tap, data ready, and overrun interrupts are only setup.
-Look at the ADXL343.h for more info on which functions are setup.
+Look at the ADXL343.h for more info on which functions are available.
 
 **How to Use:**<br>
 Copy the directory ADXL343 into the components directory of the ESP-32 project.
