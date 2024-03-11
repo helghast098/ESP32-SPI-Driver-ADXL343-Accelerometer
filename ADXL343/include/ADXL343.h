@@ -184,6 +184,7 @@ esp_err_t ADXL343_Calibrate ( const ADXL343_Handle_t handle );
 
 /**
 * @brief Set Tap Threshold in which tap will register when over
+* @note Make sure to call ADXL343_Start_Measuring() before calling this function
 *
 * @param handle: pointer to ADXL343 Handle
 * @param gThreshold: float value must range from 0g-16g
