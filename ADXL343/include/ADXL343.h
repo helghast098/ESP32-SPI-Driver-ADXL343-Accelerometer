@@ -85,7 +85,7 @@ typedef struct {
 	spi_host_device_t hostID;
 	int clockSpeedHz;
 	gpio_num_t cs;
-	uint8_t outputRate;
+	uint8_t outputRate; // Use one of the Defined output rates
 } ADXL343_Config_t;
 
 typedef struct ADXL343_Context_t ADXL343_Context_t;
