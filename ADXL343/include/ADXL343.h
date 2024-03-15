@@ -168,8 +168,11 @@ esp_err_t ADXL343_Set_Output_Rate ( const ADXL343_Handle_t handle, uint8_t rate 
 */
 esp_err_t ADXL343_Read_XYZ_Data ( const ADXL343_Handle_t handle, float* x, float* y, float* z );
 
+
+/*==================== FIRST AND SECOND TAP ====================*/
 /**
-* @brief Calibrates Accelerometer to zero is axis. Make
+* @brief Calibrates Accelerometer to zero is axis. Make sure ADXL343_Start_Measuring()
+*        is called first.
 * @note: Make sure the Z axis is pointing up
 *
 * @param handle: pointer to ADXL343 Handle
@@ -178,8 +181,6 @@ esp_err_t ADXL343_Read_XYZ_Data ( const ADXL343_Handle_t handle, float* x, float
 *		- Other Error Depending on spi_device_transmit
 *
 */
-
-/*==================== FIRST AND SECOND TAP ====================*/
 esp_err_t ADXL343_Calibrate ( const ADXL343_Handle_t handle );
 
 /**
